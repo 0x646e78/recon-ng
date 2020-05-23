@@ -637,6 +637,7 @@ class Framework(cmd.Cmd):
             return 0
 
         for column in columns:
+            # convert any type to unicode (str) for external processing
             data[column] = self.to_unicode_str(data[column])
             if table not in ['scope', 'dashboard'] and column != 'module':
                 # Scoping WIP - blacklist based on a regex currently
