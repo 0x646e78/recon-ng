@@ -48,7 +48,7 @@ builtins.print = spool_print
 
 class Recon(framework.Framework):
 
-    repo_url = 'https://raw.githubusercontent.com/lanmaster53/recon-ng-modules/master/'
+    repo_url = 'https://raw.githubusercontent.com/0x646e78/recon-ng-modules/master/'
 
     def __init__(self, check=True, analytics=True, marketplace=True, accessible=False):
         framework.Framework.__init__(self, 'base')
