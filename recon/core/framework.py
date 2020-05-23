@@ -607,6 +607,18 @@ class Framework(cmd.Cmd):
         if not mute: self._display(data, rowcount)
         return rowcount
 
+    def insert_scope(self, value=None, column=None, action=None, notes=None, mute=False):
+        '''Adds a scope row to the database and returns the affected row count.'''
+        data = dict(
+            value = value,
+            column = column,
+            action = action,
+            notes = notes
+        )
+        rowcount = self.insert('scope', data.copy(), data.keys())
+        if not mute: self._display(data, rowcount)
+        return rowcount
+
     def insert(self, table, data, unique_columns=[]):
         '''Inserts items into database and returns the affected row count.
         table - the table to insert the data into
@@ -623,10 +635,20 @@ class Framework(cmd.Cmd):
         # exit if there is nothing left to insert
         if not columns:
             return 0
-        # convert any type to unicode (str) for external processing
+
         for column in columns:
             data[column] = self.to_unicode_str(data[column])
-
+            if table not in ['scope', 'dashboard'] and column != 'module':
+                # Scoping WIP - blacklist based on a regex currently
+                # e.g '.*\.cloudfront\.net To block all cloudfront distributions
+                # Could add a column 'match_type' to define regex match or static string.
+                bl_query = f"SELECT value FROM scope WHERE column == '{column}' and action == 'blacklist'"
+                bl_tuples = self.query(bl_query) #query returns a list of tuples?...
+                blacklisted = [item for t in bl_tuples for item in t]
+                reg_list = map(re.compile, blacklisted)
+                if any(regex.match(data[column]) for regex in reg_list):
+                    #scoping is assuming one row per insert call....
+                    return 0 #nothing to insert
         # build the insert query
         columns_str = '`, `'.join(columns)
         placeholder_str = ', '.join('?'*len(columns))
