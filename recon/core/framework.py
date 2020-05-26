@@ -639,17 +639,9 @@ class Framework(cmd.Cmd):
         for column in columns:
             # convert any type to unicode (str) for external processing
             data[column] = self.to_unicode_str(data[column])
-            if table not in ['scope', 'dashboard'] and column != 'module':
-                # Scoping WIP - blacklist based on a regex currently
-                # e.g '.*\.cloudfront\.net To block all cloudfront distributions
-                # Could add a column 'match_type' to define regex match or static string.
-                bl_query = f"SELECT value FROM scope WHERE column == '{column}' and action == 'blacklist'"
-                bl_tuples = self.query(bl_query) #query returns a list of tuples?...
-                blacklisted = [item for t in bl_tuples for item in t]
-                reg_list = map(re.compile, blacklisted)
-                if any(regex.match(data[column]) for regex in reg_list):
-                    #scoping is assuming one row per insert call....
-                    return 0 #nothing to insert
+            allow_insert = self.scope(table, column, data[column])
+            if not allow_insert:
+                return 0 #nothing to insert
         # build the insert query
         columns_str = '`, `'.join(columns)
         placeholder_str = ', '.join('?'*len(columns))
@@ -670,6 +662,37 @@ class Framework(cmd.Cmd):
         self._summary_counts[table]['count'] += 1
 
         return rowcount
+
+    def scope(self, table, column, data):
+        # Scoping WIP - blacklist/whitelist 'host' based on a regex currently
+        # If whitelisted, still matches within on blacklists
+        # e.g '.*\.cloudfront\.net To block all cloudfront distributions
+        # Could add a column 'match_type' to define regex match or static string perhaps
+        # Currently assuming one row per insert call....
+        # Returns True if the insert is allowed.
+        if table not in ['scope', 'dashboard'] and column != 'module':
+            wl_query = f"SELECT value FROM scope WHERE column == '{column}' and action == 'whitelist'"
+            wl_tuples = self.query(wl_query) #query returns a list of tuples?...
+            if len(wl_tuples) > 0:
+                whitelisted = [item for t in wl_tuples for item in t]
+                if column == 'host':
+                    reg_list = map(re.compile, whitelisted)
+                    if not any(regex.match(data) for regex in reg_list):
+                        return False
+            bl_query = f"SELECT value FROM scope WHERE column == '{column}' and action == 'blacklist'"
+            bl_tuples = self.query(bl_query) #query returns a list of tuples?...
+            blacklisted = [item for t in bl_tuples for item in t]
+            if column == 'host':
+                reg_list = map(re.compile, blacklisted)
+                if any(regex.match(data) for regex in reg_list):
+                    return False
+            if column == 'ip_address':
+                # support cidr, ip range, single ip
+                pass
+            if column == 'email':
+                # regex again? or perhaps domains to whitelist/blacklist
+                pass
+        return True
 
     #==================================================
     # OPTIONS METHODS
