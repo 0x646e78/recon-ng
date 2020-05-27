@@ -677,14 +677,14 @@ class Framework(cmd.Cmd):
                 whitelisted = [item for t in wl_tuples for item in t]
                 if column == 'host':
                     reg_list = map(re.compile, whitelisted)
-                    if not any(regex.match(data) for regex in reg_list):
+                    if not any(regex.match(data.lower()) for regex in reg_list):
                         return False
             bl_query = f"SELECT value FROM scope WHERE column == '{column}' and action == 'blacklist'"
             bl_tuples = self.query(bl_query) #query returns a list of tuples?...
             blacklisted = [item for t in bl_tuples for item in t]
             if column == 'host':
                 reg_list = map(re.compile, blacklisted)
-                if any(regex.match(data) for regex in reg_list):
+                if any(regex.match(data.lower()) for regex in reg_list):
                     return False
             if column == 'ip_address':
                 # support cidr, ip range, single ip
