@@ -668,7 +668,8 @@ class Framework(cmd.Cmd):
         # If whitelisted, still matches within on blacklists
         # e.g '.*\.cloudfront\.net To block all cloudfront distributions
         # Could add a column 'match_type' to define regex match or static string perhaps
-        # Currently assuming one row per insert call....
+        # Currently assuming one row per insert call.... seems to be valid
+        # Needs a clean up, too verbose/repeating
         # Returns True if the insert is allowed.
         if table not in ['scope', 'dashboard'] and column != 'module':
             wl_query = f"SELECT value FROM scope WHERE column == '{column}' and action == 'whitelist'"
